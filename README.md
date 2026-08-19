@@ -74,8 +74,8 @@ common/       shared model client used by all labs
   before completing its `code -d` merge step. Re-open the diff and merge the gap.
 - **Model replies are very slow** — that's the local model. Set a cloud API key
   (above) for near-instant replies.
-- **`ollama: connection refused`** — run `bash scripts/startOllama.sh` to restart
-  the local model server.
+- **`ollama: connection refused`** — run `bash scripts/startup_ollama.sh` to
+  restart the local model server.
 - **`address already in use`** — a previous lab's process is still running; the
   labs use in-memory transport, so just start a fresh terminal.
 

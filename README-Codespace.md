@@ -29,8 +29,8 @@ complete and a ready message.
 
 ## If the Codespace restarts
 
-Run `bash scripts/startOllama.sh` to bring the local model server back up. Your
-files and merges are preserved.
+Run `bash scripts/startup_ollama.sh` to bring the local model server back up
+(this also runs automatically on reattach). Your files and merges are preserved.
 
 ## Optional: use a faster cloud model
 
