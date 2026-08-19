@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
 # Make sure Ollama is installed, running, and has the default lab model pulled.
-# Called from BOTH postCreateCommand (first build) and postAttachCommand (every
-# reattach) in .devcontainer/devcontainer.json -- safe to run repeatedly, since
-# every step below is a fast no-op once it's already done (in particular,
-# `ollama pull` on a model that's already cached is just a manifest check, not
-# a re-download).
+#
+# Called from BOTH hooks in .devcontainer/devcontainer.json:
+#   postCreateCommand  - once, when the container is first built
+#   postAttachCommand  - every time VS Code attaches (including after a
+#                        Codespace stop/resume, which is what kills the server)
+#
+# One script for both is deliberate: the server does NOT survive a container
+# stop even though the installed binary and pulled models persist on disk, so
+# the reattach path has to be able to do everything the create path does.
+# Every step below is a no-op once it's already done, and the model check on
+# the last step means a normal reattach touches the network zero times.
 #
 # Set OPENAI_API_KEY or ANTHROPIC_API_KEY to use a faster cloud model instead
 # of this local one; common/llm.py auto-detects either.
@@ -22,8 +28,8 @@ if ! command -v ollama >/dev/null 2>&1; then
     curl -fsSL https://ollama.com/install.sh | sh
 fi
 
-# Start the server if it isn't already up -- it doesn't survive a container
-# stop/restart even though the binary and any pulled models stay on disk.
+# Start the server if it isn't already up. This is the step that matters on
+# reattach -- the container runs no systemd, so nothing else restarts it.
 if ! curl -s http://localhost:11434/api/tags >/dev/null 2>&1; then
     nohup ollama serve >/tmp/ollama.log 2>&1 &
     sleep 3
@@ -35,6 +41,14 @@ if ! curl -s http://localhost:11434/api/tags >/dev/null 2>&1; then
     exit 1
 fi
 
-echo "Pulling ${MODEL} (fast no-op if already cached; ~2 GB on first run)..."
-ollama pull "${MODEL}"
-echo "Ollama ready with ${MODEL}."
+# Only pull if the model isn't already on disk. `ollama pull` on a cached model
+# still contacts the registry to check the manifest, which would make every
+# reattach depend on the network and (with set -e) fail the whole hook on a
+# transient hiccup, even though the model is sitting right there.
+if ollama list 2>/dev/null | awk '{print $1}' | grep -qxF "${MODEL}"; then
+    echo "Ollama ready with ${MODEL} (already present)."
+else
+    echo "Pulling ${MODEL} (~2 GB, first run only)..."
+    ollama pull "${MODEL}"
+    echo "Ollama ready with ${MODEL}."
+fi
