@@ -125,7 +125,7 @@ run — and see where it lands.
 **Lab 2 - Direct Prompt Injection: Break the Bot, Then Harden It**
 
 **Purpose:** Make the support bot leak its secret and break its own rules, then add
-four defenses and watch the same attacks fail. (~12 min; 5 model calls)
+four defenses and watch the same attacks fail. (~6 min; 10 model calls)
 
 <br><br>
 
@@ -151,8 +151,8 @@ code attacks.txt
 
 <br><br>
 
-4. Run all four attacks against the vulnerable bot. This makes four model calls, so
-expect 2–3 minutes on the local model:
+4. Run all five cases against the vulnerable bot. This makes five model calls, so
+expect 20–30 seconds on the local model:
 
 ```
 python run_attacks.py vulnerable
@@ -160,8 +160,10 @@ python run_attacks.py vulnerable
 
 <br><br>
 
-5. Read the per-attack output. Note which attacks are flagged `LEAKED` and what the
-bot gave away.
+5. Read the per-attack output. Three should be flagged `LEAKED`. Note what the bot
+gave away — and that `direct-override`, the one that asks outright, is the one it
+refuses. The three that land ask it to *repeat*, *summarize* and *translate*
+instead.
 
 ![vulnerable bot leaking](./images/sa-2-1.png?raw=true "Attacks landing")
 
@@ -189,7 +191,7 @@ code -d ../extra/support_bot_hardened_complete.txt support_bot_hardened.py
 
 <br><br>
 
-9. Run the same four attacks against the hardened bot. Blocked attacks return
+9. Run the same five cases against the hardened bot. Blocked attacks return
 instantly, so this is much faster:
 
 ```
@@ -198,13 +200,13 @@ python run_attacks.py hardened
 
 <br><br>
 
-10. Compare the final `RESULT:` line from both runs. The benign control question
-should still be answered normally — defenses that break legitimate use are not
-defenses.
+10. Compare the final `RESULT:` line from both runs — `3 of 5` should become `0 of 5`.
+The benign control question should still be answered normally — defenses that break
+legitimate use are not defenses.
 
 <br><br>
 
-11. *(optional)* Start the interactive bot and try attacks 5 and 6 from
+11. *(optional)* Start the interactive bot and try cases 6 and 7 from
 `attacks.txt`, then exit with `Ctrl+C`:
 
 ```
@@ -217,6 +219,9 @@ python support_bot_hardened.py
 
 - The strongest fix wasn't a filter — it was moving the secret *out of the model's
   context* entirely. The model can't leak what it never sees.
+- A model's refusal training is shaped around *requests to disclose*. Reframe the
+  same ask as a routine transformation — repeat it, summarize it, translate it — and
+  the refusal often doesn't fire. Never treat "the model won't say it" as a control.
 - The input guard, untrusted-data framing, and output redaction are defense in
   depth: each catches what the others miss.
 - Injection is not fully solvable at the prompt layer. You stack partial defenses
@@ -306,8 +311,11 @@ python rag_hardened.py
 
 <br><br>
 
-11. Confirm you see `[BLOCKED chunk: untrusted source: poisoned_faq.md]` and a
-correct answer. Stop with `Ctrl+C`.
+11. Confirm you see `[BLOCKED chunk: untrusted source: poisoned_faq.md]` — that line
+is the defense working, and it appears every time. The answer should now come from
+the trusted policy docs. If the bot instead says it doesn't have that policy, ask
+once more: the local model occasionally declines even when it has been handed good
+context. Stop with `Ctrl+C`.
 
 ![blocked poisoned chunk](./images/sa-3-1.png?raw=true "Provenance filtering")
 
@@ -419,7 +427,7 @@ restored only for the user.
 
 **Purpose:** Turn ad-hoc checks into a reusable input/output guard pipeline, prove
 it with an automated attack suite, then extend the suite and find the gap that is
-still there. (~12 min; 4 model calls)
+still there. (~6 min; 12 model calls)
 
 <br><br>
 
