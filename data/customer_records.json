@@ -1,0 +1,5 @@
+[
+  {"order_id": "A1001", "name": "Dana Reyes", "email": "dana.reyes@example.com", "phone": "555-201-3345", "card": "4111 1111 1111 1234", "ssn": "521-44-9087", "note": "Asked about return for order A1001"},
+  {"order_id": "A1002", "name": "Priya Nair", "email": "priya.nair@example.com", "phone": "555-870-2210", "card": "5500 0000 0000 0004", "ssn": "601-23-7788", "note": "Shipping delay complaint"},
+  {"order_id": "A1003", "name": "Marcus Cole", "email": "m.cole@example.com", "phone": "555-663-1190", "card": "3400 0000 0000 009", "ssn": "underwriter reference 12-3456789", "note": "Refund processed"}
+]

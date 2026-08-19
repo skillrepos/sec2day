@@ -1,0 +1,59 @@
+"""
+Lab 10 -- A containment sandbox. COMPLETE reference.
+
+Wrap an agent's actions so a compromise stays small:
+  1. Action budget -- stop after max_actions calls.
+  2. Egress allow-list -- every fetched URL is checked.
+  3. Kill switch -- one tripped guard trips the whole sandbox; nothing runs after.
+
+Run:
+  python sandbox.py
+"""
+from egress_allowlist import check_url
+
+
+class Sandbox:
+    def __init__(self, max_actions=10):
+        self.max_actions = max_actions
+        self.actions = 0
+        self.killed = False
+        self.log = []
+
+    def _trip(self, reason):
+        self.killed = True
+        self.log.append(f"KILLED: {reason}")
+
+    def act(self, kind, payload):
+        """Run one agent action under containment. Return (ran, result_or_reason)."""
+        if self.killed:
+            return False, "sandbox killed -- refusing further actions"
+        self.actions += 1
+        if self.actions > self.max_actions:
+            self._trip("action budget exceeded")
+            return False, "action budget exceeded"
+
+        if kind == "fetch":
+            ok, reason = check_url(payload)
+            if not ok:
+                self._trip(reason)
+                return False, reason
+        self.log.append(f"ok: {kind} {payload}")
+        return True, f"did {kind}: {payload}"
+
+
+def main():
+    box = Sandbox(max_actions=10)
+    plan = [("fetch", "http://api.omnitech.example/x"),
+            ("fetch", "http://attacker.example/collect"),   # egress violation -> kill
+            ("fetch", "http://api.omnitech.example/y")]      # never runs; sandbox killed
+    for kind, payload in plan:
+        ran, msg = box.act(kind, payload)
+        print(f"  {'OK  ' if ran else 'STOP'} {kind} {payload} -> {msg}")
+    print("\n--- containment log ---")
+    for line in box.log:
+        print("  ", line)
+    print(f"Total actions attempted after kill: none. Blast radius = 1 bad call.")
+
+
+if __name__ == "__main__":
+    main()

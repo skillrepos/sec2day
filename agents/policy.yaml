@@ -1,0 +1,14 @@
+# Per-tool authorization policy for the OmniTech support agent.
+# Deny by default: a tool not listed here is refused.
+tools:
+  lookup_order:
+    allow: true
+  issue_refund:
+    allow: true
+    max_amount: 50          # refunds above this need a human
+    require_human_above: 50
+  read_file:
+    allow: true
+    allowed_paths: ["./public/"]   # only these prefixes
+  run_shell:
+    allow: false            # the agent never needs a shell

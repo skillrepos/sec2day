@@ -1,0 +1,17 @@
+# Securing AI Agents, MCP & RAG in Production -- lab dependencies
+
+# LLM clients (labs auto-select: Ollama by default; cloud if a key is present)
+ollama>=0.3.0
+openai>=1.40.0
+anthropic>=0.34.0
+
+# RAG labs (vector store; labs use an offline embedding so no model download)
+chromadb>=0.5.0
+
+# MCP labs -- FastMCP 4.0 (uses mcp 2.0, MCP protocol revision 2026-07-28, stateless).
+# Pinned to the 4.0 beta because that is the first FastMCP line on the 2026-07-28
+# spec. Re-check for a 4.0 stable release before each cohort and bump if available.
+fastmcp>=4.0.0b3,<5
+
+# Config / eval suites
+pyyaml>=6.0

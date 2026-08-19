@@ -1,0 +1,26 @@
+name: security-gate
+
+# Runs the security eval suite on every PR. A regression that lets an injection
+# through drops the pass rate below threshold and fails the build -- the same
+# way a failing unit test would.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  security-evals:
+    runs-on: ubuntu-latest
+    env:
+      LLM_BACKEND: mock   # deterministic: the guards are regex, no model needed in CI
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install pyyaml
+      - name: Run security eval gate
+        run: |
+          cd ops
+          python eval_gate.py

@@ -1,0 +1,130 @@
+"""
+Lab 12 -- EU AI Act Article 50 transparency controls. COMPLETE reference.
+
+Article 50 is four separate obligations, and they do NOT all bind the same party
+or take the same form. Getting this split right is most of the work:
+
+  50(1) PROVIDER  -- tell people they are interacting with an AI, at first
+                     interaction, "unless this is obvious".
+  50(2) PROVIDER  -- mark synthetic output in a MACHINE-READABLE format so it is
+                     detectable as AI-generated. A visible sentence is not this.
+  50(3) DEPLOYER  -- inform people exposed to emotion-recognition or biometric
+                     categorisation that the system is operating.
+  50(4) DEPLOYER  -- clearly (visibly) label AI-generated text published to inform
+                     the public on matters of public interest. Exempt if the text
+                     had genuine human editorial review.
+
+Run:
+  python compliance.py
+"""
+import hashlib
+import json
+
+# ---- 50(1) provider: interaction disclosure -------------------------------
+DISCLOSURE = ("You're chatting with OmniTech's AI assistant, not a human. "
+              "It can make mistakes; verify anything important.")
+
+# ---- 50(2) provider: machine-readable marking -----------------------------
+# Zero-width characters carry a marker a machine can read but a reader won't see.
+# Production systems use C2PA manifests or SynthID; this shows the same shape.
+ZW = {"0": "​", "1": "‌"}
+ZW_INV = {v: k for k, v in ZW.items()}
+MARK_TAG = "AIGEN"
+
+# ---- 50(3) deployer: biometric / emotion notice ---------------------------
+BIOMETRIC_NOTICE = ("Notice: this chat uses automated sentiment analysis to route "
+                    "urgent cases. You are being exposed to an emotion-recognition "
+                    "system.")
+
+# ---- 50(4) deployer: visible label on public-interest text ----------------
+PUBLIC_LABEL = "[AI-GENERATED]"
+
+
+def disclose():
+    """50(1): the banner shown at the start of the first interaction."""
+    return DISCLOSURE
+
+
+def _to_zw(text):
+    bits = "".join(format(b, "08b") for b in text.encode())
+    return "".join(ZW[b] for b in bits)
+
+
+def _from_zw(blob):
+    bits = "".join(ZW_INV[c] for c in blob if c in ZW_INV)
+    out = bytearray()
+    for i in range(0, len(bits) - 7, 8):
+        out.append(int(bits[i:i + 8], 2))
+    return out.decode(errors="ignore")
+
+
+def mark_machine_readable(text, model="omnitech-assistant-v1"):
+    """50(2): embed an invisible, machine-detectable marker. Returns marked text."""
+    payload = f"{MARK_TAG}:{model}"
+    return text + _to_zw(payload)
+
+
+def detect(text):
+    """50(2): the detection side -- returns the decoded marker, or None."""
+    blob = "".join(c for c in text if c in ZW_INV)
+    if not blob:
+        return None
+    payload = _from_zw(blob)
+    return payload if payload.startswith(MARK_TAG) else None
+
+
+def notify_biometric(enabled):
+    """50(3): notice shown when emotion recognition is in use. '' when it is not."""
+    return BIOMETRIC_NOTICE if enabled else ""
+
+
+def label_public_interest(text, human_reviewed=False):
+    """50(4): visibly label public-interest text unless a human genuinely reviewed it."""
+    if human_reviewed:
+        return text
+    return f"{PUBLIC_LABEL} {text}"
+
+
+def compliance_report(sample_reply, biometric_on=False,
+                      is_public_interest=False, human_reviewed=False):
+    """Map each control to its Article 50 paragraph, who it binds, and whether it
+    even applies. Knowing which obligations apply to you is half the work."""
+    rows = [
+        ("50(1)", "provider", "Interaction disclosure",
+         True, DISCLOSURE in sample_reply),
+        ("50(2)", "provider", "Machine-readable marking",
+         True, detect(sample_reply) is not None),
+        ("50(3)", "deployer", "Emotion/biometric notice",
+         biometric_on, BIOMETRIC_NOTICE in sample_reply),
+        ("50(4)", "deployer", "Visible label on public-interest text",
+         is_public_interest and not human_reviewed, PUBLIC_LABEL in sample_reply),
+    ]
+    return rows
+
+
+def main():
+    body = "Returns are accepted within 30 days for a full refund."
+    reply = disclose() + "\n\n" + body
+    reply = mark_machine_readable(reply)
+
+    print("What the customer sees (marker is invisible):")
+    print("  " + reply.replace("​", "").replace("‌", "").replace("\n", "\n  "))
+    print(f"\nRaw length {len(reply)} chars -- "
+          f"{sum(1 for c in reply if c in ZW_INV)} of them are the invisible marker.")
+    print(f"Machine detection -> {detect(reply)}")
+
+    print("\nArticle 50 control map for THIS system (a support chatbot):")
+    print(f"  {'PARA':<7}{'BINDS':<10}{'CONTROL':<40}STATUS")
+    for para, who, control, applies, ok in compliance_report(reply):
+        status = ("OK" if ok else "MISSING") if applies else "n/a for this system"
+        print(f"  {para:<7}{who:<10}{control:<40}{status}")
+
+    news = "OmniTech is recalling the X200 charger."
+    print("\n50(4) public-interest text, no human review:")
+    print("  " + label_public_interest(news))
+    print("50(4) same text after genuine editorial review (exempt):")
+    print("  " + label_public_interest(news, human_reviewed=True))
+
+
+if __name__ == "__main__":
+    main()

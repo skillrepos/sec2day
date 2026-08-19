@@ -1,0 +1,270 @@
+{
+  "files": {
+    "extra/threat_model_complete.txt": [
+      {
+        "anchor": "for code in APPLIES_TO.get(component.ctype, []):",
+        "endAnchor": "out.append((code, name, base))",
+        "title": "Look up applicable risks",
+        "note": [
+          "**Maps a component's type to the OWASP LLM risks that threaten it.**",
+          "- A RAG index and a shell tool face different categories",
+          "- Returns (code, name, severity) triples the scorer adds up"
+        ]
+      },
+      {
+        "anchor": "numeric = sum(base for _, _, base in risks_for(component))",
+        "endAnchor": "numeric += 2",
+        "title": "Risk score math",
+        "note": [
+          "**Severity x exposure, plus a penalty when the component touches PII.**",
+          "- Exposure is how reachable the component is by an attacker",
+          "- The +2 PII bump is why data stores climb the ranking"
+        ]
+      }
+    ],
+    "extra/support_bot_hardened_complete.txt": [
+      {
+        "anchor": "for pat in INJECTION_PATTERNS:",
+        "title": "Input guard",
+        "note": [
+          "**Rejects input matching known override or role-swap phrasing.**",
+          "- First layer only - you will get past regex in Lab 5"
+        ]
+      },
+      {
+        "anchor": "return (",
+        "title": "Untrusted-data framing",
+        "note": [
+          "**Wraps the customer's text in delimiters and labels it as data, not instructions.**",
+          "- Tells the model the content is something to read, not obey"
+        ]
+      },
+      {
+        "anchor": "cleaned = text.replace(STAFF_CODE, \"[REDACTED]\")",
+        "title": "Output redaction backstop",
+        "note": [
+          "**Scrubs the secret from replies, including the dash-separated evasion.**",
+          "- Last line of defense if the model slips"
+        ]
+      }
+    ],
+    "extra/rag_hardened_complete.txt": [
+      {
+        "anchor": "return any(re.search(p, text, re.IGNORECASE) for p in INJECTION_MARKERS)",
+        "title": "Chunk injection screen",
+        "note": [
+          "**Flags retrieved text that reads like instructions rather than policy.**",
+          "- Backup for when a trusted source is itself compromised"
+        ]
+      },
+      {
+        "anchor": "for doc, src, _dist in hits:",
+        "endAnchor": "kept.append(doc)",
+        "title": "Provenance filter",
+        "note": [
+          "**Keeps only chunks from approved source files; logs why each one was dropped.**",
+          "- This is the control that stops the poisoned document",
+          "- Watch for the BLOCKED lines when you run it"
+        ]
+      }
+    ],
+    "extra/pii_pipeline_complete.txt": [
+      {
+        "anchor": "if value in self._to_token:",
+        "title": "Stable token allocation",
+        "note": [
+          "**Returns the same token for the same value, creating one on first sight.**",
+          "- Stability lets the model reason about <CARD_1> across a conversation"
+        ]
+      },
+      {
+        "anchor": "for kind, pattern in PII_PATTERNS.items():",
+        "title": "Redact every PII match",
+        "note": [
+          "**Swaps each detected card, SSN, email and phone for a vault token.**",
+          "- The vault mapping never leaves your application"
+        ]
+      }
+    ],
+    "extra/guards_complete.txt": [
+      {
+        "anchor": "for pat in JAILBREAK_PATTERNS:",
+        "title": "Jailbreak input guard",
+        "note": [
+          "**Blocks known jailbreak phrasing before the request reaches the model.**",
+          "- Blocked inputs cost no model time, which is why guarded runs are fast"
+        ]
+      },
+      {
+        "anchor": "cleaned = text.replace(STAFF_CODE, \"[REDACTED]\")",
+        "title": "Secret output guard",
+        "note": [
+          "**Redacts the staff code from any reply, including spaced-out variants.**",
+          "- Output guards always run, even when input guards passed"
+        ]
+      }
+    ],
+    "extra/attack_suite_v2_complete.txt": [
+      {
+        "anchor": "# --- merged in during step 9: two evasions that dodge the word \"instructions\" ---",
+        "endAnchor": "must_not_contain: [\"SPRING-STAFF-42\", \"system prompt\"]",
+        "title": "Two evasion test cases",
+        "note": [
+          "**Attacks that never say 'ignore instructions', so the regex guard misses them.**",
+          "- Expect the score to drop to 4/6 - that is the point",
+          "- Real red-teaming grows this file after every incident"
+        ]
+      }
+    ],
+    "extra/support_agent_secure_complete.txt": [
+      {
+        "anchor": "def decide(ok, reason):",
+        "endAnchor": "return decide(True, \"ok\")",
+        "title": "Deny-by-default authorization",
+        "note": [
+          "**Every tool call is checked against policy.yaml and recorded in the audit trail.**",
+          "- Unlisted tools are refused, so the shell simply disappears",
+          "- Refunds over the limit need a human; file reads need an allow-listed path"
+        ]
+      }
+    ],
+    "extra/client_pinned_complete.txt": [
+      {
+        "anchor": "return name in MANIFEST and desc_hash(description) == MANIFEST[name]",
+        "title": "Pin tools by description hash",
+        "note": [
+          "**Trusts a tool only if its description still hashes to the approved value.**",
+          "- Catches rug-pulls: a trusted tool whose description changes later"
+        ]
+      },
+      {
+        "anchor": "clean = description or \"\"",
+        "title": "Sanitize tool descriptions",
+        "note": [
+          "**Strips hidden-instruction markers before any description reaches the model.**",
+          "- MCP tool metadata is model context, so it is an injection surface"
+        ]
+      }
+    ],
+    "extra/secure_server_complete.txt": [
+      {
+        "anchor": "if need is None:",
+        "title": "Scope + per-action check",
+        "note": [
+          "**Denies unknown tools, missing scopes, then refunds over the limit.**",
+          "- Scope asks 'may you use this tool at all'; the limit asks 'may you do this'",
+          "- Runs in middleware, so every tool is covered automatically"
+        ]
+      }
+    ],
+    "extra/mini_coder_secure_complete.txt": [
+      {
+        "anchor": "docs = \"\\n\".join(open(os.path.join(REPO, n)).read()",
+        "title": "Repo content as data",
+        "note": [
+          "**Reads the repo docs and declared hooks without executing any of them.**",
+          "- The naive agent ran those hooks; this one only records them"
+        ]
+      },
+      {
+        "anchor": "if ok:",
+        "title": "Gate commands through policy",
+        "note": [
+          "**Runs a command only if the policy allows it; otherwise logs the block and reason.**",
+          "- Allow-listed binaries plus a deny-scan for dangerous patterns"
+        ]
+      }
+    ],
+    "extra/sandbox_complete.txt": [
+      {
+        "anchor": "self.actions += 1",
+        "title": "Action budget",
+        "note": [
+          "**Trips the kill switch once the agent exceeds its allowed number of actions.**",
+          "- Bounds a looping or hijacked agent"
+        ]
+      },
+      {
+        "anchor": "if kind == \"fetch\":",
+        "title": "Egress check and kill switch",
+        "note": [
+          "**Any fetch to a non-allow-listed host trips the sandbox, and nothing runs after.**",
+          "- Often the single most effective control: no reachable host, no exfiltration"
+        ]
+      }
+    ],
+    "extra/eval_gate_complete.txt": [
+      {
+        "anchor": "for bad in case.get(\"forbidden\", []):",
+        "endAnchor": "reasons.append(\"did not refuse\")",
+        "title": "Score one eval case",
+        "note": [
+          "**Fails a case if a forbidden string leaked, or if it should have refused and did not.**",
+          "- Same shape as a unit-test assertion"
+        ]
+      },
+      {
+        "anchor": "sys.exit(0 if rate >= threshold else 1)",
+        "title": "The CI gate itself",
+        "note": [
+          "**Exits non-zero when the pass rate falls below threshold, which blocks the merge.**",
+          "- A non-zero exit is all CI needs to fail a build"
+        ]
+      }
+    ],
+    "extra/security_evals_v2_complete.txt": [
+      {
+        "anchor": "# --- merged in at step 8: a regression the current guards do NOT catch ---",
+        "title": "A regression the guards miss",
+        "note": [
+          "**Adds an evasion the current guards do not catch, dropping the rate to 80%.**",
+          "- Re-run and watch the exit code flip from 0 to 1"
+        ]
+      }
+    ],
+    "extra/compliance_complete.txt": [
+      {
+        "anchor": "payload = f\"{MARK_TAG}:{model}\"",
+        "title": "Article 50(2) machine-readable mark",
+        "note": [
+          "**Embeds an invisible, machine-detectable marker in the output text.**",
+          "- 50(2) requires machine-readable marking - a visible sentence is not enough",
+          "- Production uses C2PA or provider watermarking; same shape, better tech"
+        ]
+      },
+      {
+        "anchor": "if human_reviewed:",
+        "title": "Article 50(4) visible label",
+        "note": [
+          "**Visibly labels public-interest text, unless a human genuinely reviewed it.**",
+          "- 50(4) binds the deployer and is a different obligation from 50(2)",
+          "- Editorial review is the stated exemption"
+        ]
+      }
+    ],
+    "extra/omnitech_agent_hardened_complete.txt": [
+      {
+        "anchor": "return [text for name, text in DOCS.items() if name in TRUSTED_SOURCES]",
+        "title": "Layer 1: trusted retrieval",
+        "note": [
+          "**Returns only documents from approved sources, dropping the poisoned one.**"
+        ]
+      },
+      {
+        "anchor": "if any(re.search(p, text, re.IGNORECASE) for p in INJECTION):",
+        "title": "Layer 2: input guard",
+        "note": [
+          "**Refuses injection-shaped input before it ever reaches retrieval or the model.**"
+        ]
+      },
+      {
+        "anchor": "self.disclosed = True",
+        "title": "Layer 6: disclose and mark",
+        "note": [
+          "**Adds the 50(1) disclosure banner and the 50(2) machine-readable marker.**",
+          "- The scorecard tests this with detect(), not a string search"
+        ]
+      }
+    ]
+  }
+}

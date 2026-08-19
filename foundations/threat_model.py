@@ -1,0 +1,94 @@
+"""
+Lab 1 -- Threat-model the OmniTech support agent.
+
+We describe the system as a list of components, then score each component's
+risk from the OWASP LLM Top-10 categories that apply to it. No LLM needed --
+this lab is about learning to SEE the attack surface before we start breaking it.
+
+This is the SKELETON. Merge in the two gaps from extra/threat_model_complete.txt,
+then run:  python threat_model.py
+"""
+from dataclasses import dataclass
+
+# OWASP LLM Top-10 (2025/2026) categories, abbreviated for the lab.
+OWASP = {
+    "LLM01": ("Prompt Injection", 5),
+    "LLM02": ("Sensitive Information Disclosure", 5),
+    "LLM04": ("Data & Model Poisoning", 4),
+    "LLM05": ("Improper Output Handling", 4),
+    "LLM06": ("Excessive Agency", 5),
+    "LLM07": ("System Prompt Leakage", 3),
+    "LLM08": ("Vector & Embedding Weaknesses", 3),
+    "LLM10": ("Unbounded Consumption", 3),
+}
+
+# Which categories threaten which kind of component.
+APPLIES_TO = {
+    "llm":        ["LLM01", "LLM02", "LLM05", "LLM07"],
+    "rag":        ["LLM01", "LLM04", "LLM08", "LLM02"],
+    "tool":       ["LLM06", "LLM05", "LLM10"],
+    "mcp":        ["LLM06", "LLM01", "LLM02"],
+    "data_store": ["LLM02", "LLM04"],
+    "coding_agent": ["LLM01", "LLM06", "LLM05"],
+}
+
+# How exposed each component type is (multiplier on the base severity).
+EXPOSURE = {
+    "llm": 1.0, "rag": 1.0, "tool": 1.2, "mcp": 1.2,
+    "data_store": 0.8, "coding_agent": 1.3,
+}
+
+
+@dataclass
+class Component:
+    name: str
+    ctype: str
+    handles_pii: bool = False
+
+
+# The OmniTech support agent, as deployed.
+SYSTEM = [
+    Component("support-chatbot (LLM)", "llm"),
+    Component("policy-doc RAG index", "rag"),
+    Component("order-lookup tool", "tool", handles_pii=True),
+    Component("refund tool", "tool"),
+    Component("file-read tool", "tool"),
+    Component("customer-records store", "data_store", handles_pii=True),
+    Component("MCP enterprise gateway", "mcp"),
+    Component("dev-team coding agent", "coding_agent"),
+]
+
+
+def risks_for(component):
+    """Return the list of (code, name, base_severity) that apply to a component."""
+    out = []
+    # TODO (gap 1): for each OWASP code in APPLIES_TO for this component's ctype,
+    #   append (code, name, base_severity) using the OWASP table.
+    raise NotImplementedError("merge gap 1 from extra/threat_model_complete.txt")
+    return out
+
+
+def score(component):
+    """Return (band, numeric) for a component. Higher = more dangerous."""
+    # TODO (gap 2): numeric = sum of base severities from risks_for(component),
+    #   times the component's EXPOSURE multiplier, +2 if it handles PII.
+    numeric = 0.0
+    raise NotImplementedError("merge gap 2 from extra/threat_model_complete.txt")
+    band = "HIGH" if numeric >= 14 else "MEDIUM" if numeric >= 8 else "LOW"
+    return band, round(numeric, 1)
+
+
+def main():
+    print(f"{'COMPONENT':<28}{'BAND':<8}{'SCORE':<7}TOP RISKS")
+    print("-" * 78)
+    ranked = sorted(SYSTEM, key=lambda c: score(c)[1], reverse=True)
+    for c in ranked:
+        band, numeric = score(c)
+        top = ", ".join(code for code, _, _ in risks_for(c)[:3])
+        print(f"{c.name:<28}{band:<8}{numeric:<7}{top}")
+    print("-" * 78)
+    print("Read top-down: this is the order we attack (and defend) the system.")
+
+
+if __name__ == "__main__":
+    main()

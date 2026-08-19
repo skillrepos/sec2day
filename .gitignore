@@ -1,0 +1,53 @@
+# =============================================================================
+# .gitignore — Securing AI Agents, MCP & RAG in Production
+# Allow-list style: a NEW internal .md (report/QA/notes) is ignored by default;
+# everything the labs actually need is explicitly kept.
+# =============================================================================
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# --- Editors / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- Secrets & local env (labs read OPENAI_API_KEY / ANTHROPIC_API_KEY from env) ---
+.env
+.env.*
+*.key
+secrets/
+
+# --- Lab runtime artifacts (generated when a lab runs) ---
+trace.jsonl
+*.log
+
+# --- Slide decks & binaries (distributed separately, never in the code repo) ---
+*.pptx
+*.pptm
+*.potx
+*.ppt
+
+# --- Internal, non-student-facing markdown -----------------------------------
+# Reports, QA docs, notes, this course's own review artifacts. Allow-list the
+# student-facing docs (and the lab DATA that happens to be markdown) so they
+# are always tracked, and let any other/new .md fall through to ignored.
+*.md
+!README.md
+!README-Codespace.md
+!LICENSE.md
+!labs.md
+!.github/copilot-instructions.md
+!bonus-claudecode/README-bonus.md
+# Lab DATA that is markdown and is REQUIRED at runtime:
+!rag/docs/*.md
+!codingagent/sample_repo/*.md
+
+# --- Scratch / staging dirs ---
+_*/
